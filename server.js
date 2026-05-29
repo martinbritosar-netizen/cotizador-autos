@@ -9,21 +9,31 @@ const CLIENT_SECRET = 'c0H0nXwCBSi9RP4MQzNJcc0b5Cw2QyWk';
 app.get('/buscar', async (req, res) => {
   try {
     const { marca, modelo, anio } = req.query;
+
     const tokenRes = await fetch('https://api.mercadolibre.com/oauth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: `grant_type=client_credentials&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`
     });
     const tokenData = await tokenRes.json();
+    console.log('Token response:', JSON.stringify(tokenData).substring(0, 100));
     const token = tokenData.access_token;
-    const q = encodeURIComponent(`${marca} ${modelo} ${anio}`);
-    const searchRes = await fetch(
-      `https://api.mercadolibre.com/sites/MLA/search?q=${q}&category=MLA1744&limit=50&condition=used`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+
+    if (!token) throw new Error('No se pudo obtener token: ' + JSON.stringify(tokenData));
+
+    const q = encodeURIComponent(`${modelo} ${anio}`);
+    const url = `https://api.mercadolibre.com/sites/MLA/search?q=${q}&category=MLA1744&limit=50&condition=used`;
+    console.log('Buscando:', url);
+
+    const searchRes = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
     const data = await searchRes.json();
+    console.log('Total resultados:', data.paging?.total, '| Items:', data.results?.length);
+
     res.json(data);
   } catch (err) {
+    console.error('Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

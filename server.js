@@ -22,7 +22,7 @@ app.get('/buscar', async (req, res) => {
     if (!token) throw new Error('No se pudo obtener token: ' + JSON.stringify(tokenData));
 
     const q = encodeURIComponent(`${modelo} ${anio}`);
-    const url = `https://api.mercadolibre.com/sites/MLA/search?q=${q}&category=MLA1744&limit=50&condition=used`;
+    const url = `https://api.mercadolibre.com/sites/MLA/search?q=${q}&category=MLA1743&limit=50&condition=used`;
     console.log('Buscando:', url);
 
     const searchRes = await fetch(url, {

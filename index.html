@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoValor — Cotizador de Autos Usados</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0d0d0d; --surface:#161616; --card:#1e1e1e; --border:#2a2a2a; --accent:#c9a84c; --accent-light:#e8c97a; --text:#f0ece4; --muted:#888; --green:#4caf7d; --red:#e05c5c; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; padding:40px 20px; }
+  header { text-align:center; margin-bottom:48px; }
+  header h1 { font-family:'Playfair Display',serif; font-size:clamp(2rem,5vw,3.5rem); color:var(--accent); letter-spacing:-1px; }
+  header p { color:var(--muted); margin-top:8px; font-size:.95rem; letter-spacing:.05em; text-transform:uppercase; }
+  .container { max-width:720px; margin:0 auto; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:32px; margin-bottom:24px; }
+  .section-title { font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--accent); margin-bottom:24px; display:flex; align-items:center; gap:10px; }
+  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+  .field { margin-bottom:20px; }
+  label { display:block; font-size:.82rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:8px; }
+  select { width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text); padding:13px 16px; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:.95rem; outline:none; transition:border-color .2s; appearance:none; -webkit-appearance:none; }
+  select:focus { border-color:var(--accent); }
+  select:disabled { opacity:.4; cursor:not-allowed; }
+  .select-wrapper { position:relative; }
+  .select-wrapper::after { content:'▾'; position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--accent); pointer-events:none; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .btn { width:100%; background:var(--accent); color:#0d0d0d; border:none; padding:16px; border-radius:12px; font-family:'DM Sans',sans-serif; font-size:1rem; font-weight:600; cursor:pointer; letter-spacing:.04em; text-transform:uppercase; transition:background .2s,transform .1s; margin-top:8px; }
+  .btn:hover { background:var(--accent-light); }
+  .btn:active { transform:scale(.98); }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .loader { display:none; text-align:center; padding:20px; color:var(--muted); font-size:.9rem; }
+  .loader.active { display:block; }
+  .spinner { display:inline-block; width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; vertical-align:middle; margin-right:8px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  #resultado { display:none; animation:fadeUp .5s ease forwards; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+  .precio-principal { text-align:center; padding:8px 0 24px; }
+  .precio-label { font-size:.8rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:8px; }
+  .precio-valor { font-family:'Playfair Display',serif; font-size:clamp(2.4rem,6vw,3.8rem); color:var(--accent); line-height:1; }
+  .precio-rango { display:flex; justify-content:center; gap:32px; margin-top:20px; }
+  .rango-item { text-align:center; }
+  .rango-item .rango-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  .rango-item .rango-val { font-size:1.1rem; font-weight:500; margin-top:4px; }
+  .rango-item.bajo .rango-val { color:var(--red); }
+  .rango-item.alto .rango-val { color:var(--green); }
+  .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:20px; }
+  .stat-box { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center; }
+  .stat-box .stat-val { font-size:1.1rem; font-weight:600; color:var(--accent); }
+  .stat-box .stat-label { font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-top:4px; }
+  .publicaciones { margin-top:24px; border-top:1px solid var(--border); padding-top:20px; }
+  .publicaciones h3 { font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:14px; }
+  .pub-item { display:flex; justify-content:space-between; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--border); font-size:.88rem; gap:12px; }
+  .pub-item:last-child { border-bottom:none; }
+  .pub-titulo { flex:1; color:var(--text); line-height:1.4; }
+  .pub-precio { font-weight:600; color:var(--accent); white-space:nowrap; }
+  .pub-link { font-size:.75rem; color:var(--muted); text-decoration:none; display:block; margin-top:3px; }
+  .pub-link:hover { color:var(--accent); }
+  .disclaimer { font-size:.78rem; color:var(--muted); text-align:center; margin-top:20px; line-height:1.6; padding-top:16px; border-top:1px solid var(--border); }
+  .error-box { background:rgba(224,92,92,.1); border:1px solid rgba(224,92,92,.3); border-radius:10px; padding:16px; color:var(--red); font-size:.88rem; margin-top:16px; display:none; line-height:1.5; }
+  @media(max-width:500px) { .grid-2{grid-template-columns:1fr;} .precio-rango{gap:16px;} .stats-grid{grid-template-columns:1fr 1fr;} .card{padding:20px;} }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>AutoValor</h1>
+    <p>Precios reales de MercadoLibre Argentina</p>
+  </header>
+  <div class="card">
+    <div class="section-title">Datos del vehículo</div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Marca</label>
+        <div class="select-wrapper">
+          <select id="marca" onchange="onMarcaChange()">
+            <option value="">Seleccionar</option>
+            <option>Toyota</option><option>Volkswagen</option><option>Ford</option>
+            <option>Chevrolet</option><option>Renault</option><option>Peugeot</option>
+            <option>Honda</option><option>Fiat</option><option>Nissan</option>
+            <option>Hyundai</option><option>BMW</option><option>Mercedes-Benz</option><option>Audi</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Modelo</label>
+        <div class="select-wrapper">
+          <select id="modelo" disabled onchange="onModeloChange()">
+            <option value="">Primero elegí marca</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Año</label>
+      <div class="select-wrapper">
+        <select id="anio" disabled onchange="onAnioChange()">
+          <option value="">Primero elegí modelo</option>
+        </select>
+      </div>
+    </div>
+    <div class="error-box" id="error-box"></div>
+    <button class="btn" id="btn-cotizar" onclick="cotizar()" disabled>Buscar precios en MercadoLibre</button>
+    <div class="loader" id="loader"><span class="spinner"></span> Consultando precios reales...</div>
+  </div>
+  <div class="card" id="resultado">
+    <div class="section-title">Precios del mercado</div>
+    <div class="precio-principal">
+      <div class="precio-label">Precio promedio</div>
+      <div class="precio-valor" id="precio-centro">—</div>
+      <div class="precio-rango">
+        <div class="rango-item bajo"><div class="rango-label">Más bajo</div><div class="rango-val" id="precio-min">—</div></div>
+        <div class="rango-item alto"><div class="rango-label">Más alto</div><div class="rango-val" id="precio-max">—</div></div>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-val" id="stat-cantidad">—</div><div class="stat-label">Publicaciones</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-mediana">—</div><div class="stat-label">Mediana</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-moneda">—</div><div class="stat-label">Moneda</div></div>
+    </div>
+    <div class="publicaciones">
+      <h3>Publicaciones encontradas</h3>
+      <div id="lista-publicaciones"></div>
+    </div>
+    <div class="disclaimer">
+      Precios obtenidos en tiempo real de MercadoLibre Argentina.<br>
+      Hacé clic en cada publicación para ver el detalle completo.
+    </div>
+  </div>
+</div>
+<script>
+const modelos = {
+  Toyota:['Corolla','Hilux','Yaris','RAV4','SW4','Fortuner','Etios','Land Cruiser Prado'],
+  Volkswagen:['Gol','Polo','Vento','T-Cross','Tiguan','Amarok','Suran','Up!'],
+  Ford:['Ka','EcoSport','Focus','Ranger','Territory','Maverick'],
+  Chevrolet:['Onix','Tracker','Cruze','S10','Montana','Captiva'],
+  Renault:['Kwid','Logan','Sandero','Duster','Oroch','Kangoo','Stepway'],
+  Peugeot:['208','308','2008','3008','408','Partner'],
+  Honda:['Fit','City','Civic','HR-V','CR-V','WR-V'],
+  Fiat:['Cronos','Argo','Pulse','Mobi','Toro','Strada'],
+  Nissan:['Versa','Kicks','Frontier','Sentra'],
+  Hyundai:['HB20','Creta','Tucson','Santa Fe','i30'],
+  BMW:['Serie 1','Serie 3','Serie 5','X1','X3','X5'],
+  'Mercedes-Benz':['Clase A','Clase C','Clase E','GLA','GLC','Sprinter'],
+  Audi:['A1','A3','A4','Q2','Q3','Q5'],
+};
+function onMarcaChange() {
+  const marca = document.getElementById('marca').value;
+  const sm = document.getElementById('modelo');
+  const sa = document.getElementById('anio');
+  sm.innerHTML = '<option value="">Seleccioná modelo</option>';
+  sa.innerHTML = '<option value="">Primero elegí modelo</option>';
+  sa.disabled = true;
+  document.getElementById('btn-cotizar').disabled = true;
+  ocultarError();
+  if (!marca) { sm.disabled = true; return; }
+  (modelos[marca]||[]).forEach(m => { const o=document.createElement('option'); o.value=m; o.textContent=m; sm.appendChild(o); });
+  sm.disabled = false;
+}
+function onModeloChange() {
+  const sa = document.getElementById('anio');
+  sa.innerHTML = '<option value="">Seleccioná año</option>';
+  const hoy = new Date().getFullYear();
+  for (let y=hoy; y>=2000; y--) { const o=document.createElement('option'); o.value=y; o.textContent=y; sa.appendChild(o); }
+  sa.disabled = false;
+  document.getElementById('btn-cotizar').disabled = true;
+  ocultarError();
+}
+function onAnioChange() {
+  document.getElementById('btn-cotizar').disabled = !document.getElementById('anio').value;
+  ocultarError();
+}
+function mostrarError(msg) { const b=document.getElementById('error-box'); b.innerHTML=msg; b.style.display='block'; }
+function ocultarError() { document.getElementById('error-box').style.display='none'; }
+const fmtNum = v => Math.round(v).toLocaleString('es-AR');
+async function cotizar() {
+  const marca  = document.getElementById('marca').value;
+  const modelo = document.getElementById('modelo').value;
+  const anio   = document.getElementById('anio').value;
+  if (!marca||!modelo||!anio) { mostrarError('Completá todos los campos.'); return; }
+  ocultarError();
+  document.getElementById('resultado').style.display = 'none';
+  document.getElementById('loader').classList.add('active');
+  document.getElementById('btn-cotizar').disabled = true;
+  try {
+    const url = `/buscar?marca=${encodeURIComponent(marca)}&modelo=${encodeURIComponent(modelo)}&anio=${anio}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Error de MercadoLibre (${res.status})`);
+    const data = await res.json();
+    const items = (data.results||[]).filter(i => i.price && i.price > 0);
+    if (items.length === 0) throw new Error(`No se encontraron publicaciones para <strong>${marca} ${modelo} ${anio}</strong>.<br>Probá con otro año o modelo.`);
+    const usd = items.filter(i => i.currency_id === 'USD');
+    const grupo = usd.length >= 3 ? usd : items;
+    const moneda = usd.length >= 3 ? 'USD' : 'ARS';
+    const vals = grupo.map(i => i.price).sort((a,b) => a-b);
+    const corte = Math.floor(vals.length * 0.1);
+    const vf = vals.slice(corte, vals.length - corte || undefined);
+    const promedio = vf.reduce((a,b)=>a+b,0) / vf.length;
+    const mediana = vf.length%2===0 ? (vf[vf.length/2-1]+vf[vf.length/2])/2 : vf[Math.floor(vf.length/2)];
+    document.getElementById('precio-centro').textContent = (moneda==='USD'?'USD ':'$ ')+fmtNum(promedio);
+    document.getElementById('precio-min').textContent    = (moneda==='USD'?'USD ':'$ ')+fmtNum(vf[0]);
+    document.getElementById('precio-max').textContent    = (moneda==='USD'?'USD ':'$ ')+fmtNum(vf[vf.length-1]);
+    document.getElementById('stat-cantidad').textContent = grupo.length;
+    document.getElementById('stat-mediana').textContent  = fmtNum(mediana);
+    document.getElementById('stat-moneda').textContent   = moneda;
+    document.getElementById('lista-publicaciones').innerHTML = grupo.slice(0,10).map(i=>`
+      <div class="pub-item">
+        <div class="pub-titulo">${i.title}<a class="pub-link" href="${i.permalink}" target="_blank">Ver en MercadoLibre →</a></div>
+        <div class="pub-precio">${moneda==='USD'?'USD ':'$ '}${fmtNum(i.price)}</div>
+      </div>`).join('');
+    const r = document.getElementById('resultado');
+    r.style.display='block'; r.style.animation='none'; r.offsetHeight; r.style.animation='';
+    r.scrollIntoView({behavior:'smooth',block:'nearest'});
+  } catch(err) {
+    mostrarError('⚠ '+(err.message||'Error desconocido'));
+  } finally {
+    document.getElementById('loader').classList.remove('active');
+    document.getElementById('btn-cotizar').disabled = false;
+  }
+}
+</script>
+</body>
+</html>
